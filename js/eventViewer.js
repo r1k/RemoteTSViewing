@@ -59,8 +59,8 @@ var prettifyBitrate = function ( br )
   }
 
   return parseFloat(br).toFixed(2).toString() + units
-
 }
+
 var updateDisplay = function ()
 {
   var tableString = ""
@@ -209,7 +209,7 @@ var main = function() {
 
   server_address = QueryString.ip;
   port = QueryString.port;
-  if (server_address == "undefined")
+  if (server_address === undefined)
   {
     server_address = "---";
     port = "---"
