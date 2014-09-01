@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+<head>
+    <title>CrudPuppy</title>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="css/jasny-bootstrap.min.css" rel="stylesheet" media="screen">
+
+    <!-- Custom styles for this template -->
+    <link href="css/navmenu.css" rel="stylesheet">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+
+    <script type='text/javascript' id='lt_ws' src='http://localhost:6942/socket.io/lighttable/ws.js'></script>
+</head>
+
+<body>
+
+    <!-- Menu-------------------------------------------------------------------------------------- -->
+    <div class="navmenu navmenu-default navmenu-fixed-left offcanvas-sm">
+        <!-- from example here http://jasny.github.io/bootstrap/examples/navmenu/ -->
+        <a class="navmenu-brand visible-md visible-lg" href="#">Event Viewer</a>
+        <ul class="nav navmenu-nav">
+            <li class="active-primary" name=".server_settings"><a>Set Server</a></li>
+            <li name=".bitrate_table"><a>Bitrates</a></li>
+            <li name=".bitrate_graph"><a>Bitrate Graph</a></li>
+        </ul>
+    </div>
+
+    <div class="navbar navbar-default navbar-fixed-top hidden-md hidden-lg">
+      <button type="button" class="navbar-toggle" data-toggle="offcanvas" data-target=".navmenu">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">Event Viewer</a>
+    </div>
+    <!-- End of menu------------------------------------------------------------------------------- -->
+
+
+
+
+    <!-- Server settings--------------------------------------------------------------------------- -->
+    <div class="container server_settings">
+        <div class="page-header">
+            <div class="panel panel-primary">
+
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        Transport stream PID bitrates
+                    </h3>
+                </div>
+
+                <div class="panel-body">
+                    <form class="form-inline" role="form">
+                        <div class="input-group">
+                            <input class="form-control input-lg" id='iserver' type="text" maxlength="24" placeholder='127.0.0.1:8888'></input>
+                            <span class="input-group-btn">
+                                <button id="setServer" type="button" class="btn btn-primary btn-lg">Set Server</button>
+                            </span>
+                        </div>
+                    </form>
+                    <div style="padding-top:15px">
+                        <p class='lead' style="margin-bottom:0px" id='server'>Server:</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- End of Server settings-------------------------------------------------------------------- -->
+
+
+
+
+    <!-- Bitrate table----------------------------------------------------------------------------- -->
+    <div class="container bitrate_table" style="display:none">
+        <div class="page-header">
+            <h3>Bitrates</h3>
+
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>PID</th>
+                        <th>Birate</th>
+                    </tr>
+                </thead>
+                <tbody id="bitrateTableBody">
+
+                </tbody>
+            </table>
+            <div>
+                <p id="output"></p>
+            </div>
+        </div>
+    </div>
+    <!-- End of Bitrate table---------------------------------------------------------------------- -->
+
+
+
+    <!-- Bitrate graph----------------------------------------------------------------------------- -->
+    <div class="container bitrate_graph" style="display:none">
+        <div class="page-header">
+            <h3>Bitrate Graph</h3>
+
+            <div class"page-header">
+            <canvas id="mycanvas" width="720" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- End of Bitrate graph---------------------------------------------------------------------- -->
+
+
+
+    <script src="js/vendor/jquery-1.10.2.min.js"></script>
+    <script src="js/vendor/bootstrap.min.js"></script>
+    <script src="js/vendor/jasny-bootstrap.min.js"></script>
+
+    <!--<script src="https://cdn.socket.io/socket.io-1.0.6.js"></script>-->
+
+    <script src="js/smoothie.js"></script>
+
+    <script src="js/plugins.js"></script>
+    <script src="js/eventViewer.js"></script>
+</body>
+</html>
