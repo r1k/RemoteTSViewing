@@ -6,6 +6,9 @@ var wsUri = "ws://10.20.9.1:8889";
 var bitrateLookup = {};
 
 var msg_handler_list = [];
+var msgCount = 0;
+
+var websocket;
 
 var QueryString = function ()
 {
@@ -108,9 +111,6 @@ var bitrate_list_handler = function(msg)
   return msg;
 }
 
-msg_handler_list.push({type:"bitrate_event", handler:bitrate_event_handler});
-msg_handler_list.push({type:"bitrate_list", handler:bitrate_list_handler});
-
 var filterMessages = function (msg)
 {
   var i = 0;
@@ -157,7 +157,6 @@ function onClose(evt)
   console.log("DISCONNECTED");
 }
 
-var msgCount = 0;
 function onMessage(evt)
 {
   writeToScreen('RESPONSE: ' + evt.data);
@@ -192,7 +191,16 @@ function writeToScreen(message)
   console.log(message);
 }
 
+function closingCode()
+{
+  websocket.close();
+   return null;
+}
+
 var main = function() {
+
+  msg_handler_list.push({type:"bitrate_event", handler:bitrate_event_handler});
+  msg_handler_list.push({type:"bitrate_list", handler:bitrate_list_handler});
 
   $('.navmenu-nav > li').click( function()
   {
@@ -249,7 +257,12 @@ var main = function() {
       testWebSocket();
   });
 
+  window.onbeforeunload = closingCode;
+
 }
+
+
+
 
 $(document).ready(main);
 
