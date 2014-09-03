@@ -9,25 +9,11 @@ var msgCount = 0;
 
 var websocket;
 
-//Rickshaw stuff
-var palette = new Rickshaw.Color.Palette( { scheme: 'classic9' } );
-var graph;
-var messages = [
-      "Changed home page welcome message",
-      "Minified JS and CSS",
-      "Changed button color from blue to green",
-      "Refactored SQL query to use indexed columns",
-      "Added additional logging for debugging",
-      "Fixed typo",
-      "Rewrite conditional logic for clarity",
-      "Added documentation for new methods"
-    ];
 
 //Data store
 var seriesData = [ new Array(0) ];
 var series = [
 		{
-			color: palette.color(),
 			data: seriesData[0],
 			name: '0',
       pid: 0,
@@ -92,13 +78,29 @@ var prettifyBitrate = function ( br )
 var updateDisplay = function ()
 {
   var tableString = ""
+  var simplebitrateArray = [];
   var totalBitrate = 0;
   var i;
   for (i = 0; i < series.length; i++)
   {
+    //First grab bitrates
     var br = series[i].data[series[i].data.length - 1].y;
     totalBitrate += br;
-    var line = "<tr><td>" + series[i].name + "</td><td>" + prettifyBitrate(br) + "</td></tr>"
+    simplebitrateArray.push({name:series[i].name, bitrate:br});
+  }
+
+
+  for (i = 0; i < simplebitrateArray.length; i++)
+  {
+    // then generate table
+
+    var line = '<tr><td>' + simplebitrateArray[i].name + '</td>';
+    line += '<td>' + prettifyBitrate(simplebitrateArray[i].bitrate) + '</td>';
+    var prcnt = simplebitrateArray[i].bitrate*100.00 / totalBitrate;
+    line += '<td><div class="progress"><div class="progress-bar" style="width: ';
+    line += Math.round(10 * Math.pow(prcnt, 0.5)).toString();
+    line += '%;"></div></div></td>';
+    line += '</tr>';
 
     tableString += line;
 
@@ -140,7 +142,6 @@ var new_bitrate_arrived = function(pid, bitrate, time)
 
     series.splice(i, 0,
                   {
-                    color: palette.color(),
                     data: seriesData[i],
                     name: pid.toString(),
                     pid: pid,
@@ -252,7 +253,7 @@ function onMessage(evt)
   if (msg)
   {
     msgCount += 1;
-    if (msgCount > 25)
+    if (msgCount > 1000)
     {
       websocket.close();
     }
@@ -340,7 +341,6 @@ var main = function() {
       seriesData = [ new Array(0) ];
       series = [
                 {
-                  color: palette.color(),
                   data: seriesData[0],
                   name: '0',
                   pid: 0,
@@ -353,138 +353,6 @@ var main = function() {
   });
 
   window.onbeforeunload = closingCode;
-
-
-
-
-  // Rickshaw code below
-
-
-
-
-
-
-
-// instantiate our graph!
-  var create_graph = function()
-  {
-
-    graph = new Rickshaw.Graph( {
-      element: document.getElementById("chart"),
-      width: 720,
-      height: 400,
-      renderer: 'area',
-      stroke: true,
-      preserve: true,
-      series: series
-    } );
-
-    graph.render();
-
-    var preview = new Rickshaw.Graph.RangeSlider( {
-      graph: graph,
-      element: document.getElementById('preview'),
-    } );
-
-    var hoverDetail = new Rickshaw.Graph.HoverDetail( {
-      graph: graph,
-      xFormatter: function(x) {
-        return new Date(x * 1000).toString();
-      }
-    } );
-
-    var annotator = new Rickshaw.Graph.Annotate( {
-      graph: graph,
-      element: document.getElementById('timeline')
-    } );
-
-    var legend = new Rickshaw.Graph.Legend( {
-      graph: graph,
-      element: document.getElementById('legend')
-
-    } );
-
-    var shelving = new Rickshaw.Graph.Behavior.Series.Toggle( {
-      graph: graph,
-      legend: legend
-    } );
-
-    var order = new Rickshaw.Graph.Behavior.Series.Order( {
-      graph: graph,
-      legend: legend
-    } );
-
-    var highlighter = new Rickshaw.Graph.Behavior.Series.Highlight( {
-      graph: graph,
-      legend: legend
-    } );
-
-    var smoother = new Rickshaw.Graph.Smoother( {
-      graph: graph,
-      element: document.querySelector('#smoother')
-    } );
-
-    var ticksTreatment = 'glow';
-
-    var xAxis = new Rickshaw.Graph.Axis.Time( {
-      graph: graph,
-      ticksTreatment: ticksTreatment,
-      timeFixture: new Rickshaw.Fixtures.Time.Local()
-    } );
-
-    xAxis.render();
-
-    var yAxis = new Rickshaw.Graph.Axis.Y( {
-      graph: graph,
-      tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
-      ticksTreatment: ticksTreatment
-    } );
-
-    yAxis.render();
-
-
-    var controls = new RenderControls( {
-      element: document.querySelector('#side_panel'),
-      graph: graph
-    } );
-
-    // add some data every so often
-    function addAnnotation(force) {
-      if (messages.length > 0 && (force || Math.random() >= 0.95)) {
-        annotator.add(seriesData[2][seriesData[2].length-1].x, messages.shift());
-        annotator.update();
-      }
-    }
-
-    addAnnotation(true);
-    setTimeout( function() { setInterval( addAnnotation, 6000 ) }, 6000 );
-
-    var previewXAxis = new Rickshaw.Graph.Axis.Time({
-      graph: preview.previews[0],
-      timeFixture: new Rickshaw.Fixtures.Time.Local(),
-      ticksTreatment: ticksTreatment
-    });
-
-    previewXAxis.render();
-
-  }
-
-  setInterval( function() {
-    if (graph===undefined && seriesData[0].length > 20)
-    {
-      create_graph();
-    }
-    else
-    {
-      graph && graph.update();
-    }
-
-  }, 500 );
-
-
-
-
-
 
 }
 
