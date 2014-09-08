@@ -7,9 +7,13 @@ var wsUri = "ws://10.20.9.1:8889";
 var stream_msg_handler_list = [];
 var control_msg_handler_list = [];
 var msgCount = 0;
+var oldmsgCount = 0;
 
 var stream_websocket;
 var control_websocket;
+
+
+var interval_function;
 
 
 //Stream data store
@@ -78,6 +82,8 @@ var new_bitrate_arrived = function(pid, bitrate, time)
                     updated:true
                   });
   }
+
+  msgCount += 1;
 }
 
 var bitrate_event_handler = function(msg)
@@ -127,6 +133,8 @@ var bitrate_list_handler = function(msg)
   }
 
   updateBitrateTable(series);
+
+  msgCount += 1;
   return msg;
 }
 
@@ -263,6 +271,25 @@ var main = function() {
       //control_websocket.send(source_request_message);
       stream_websocket = connectWebSocket(stream_wsUri, stream_msg_handler_list);
       //stream_websocket.send(message);
+
+
+      if (interval_function)
+      {
+        clearInterval(interval_function);
+      }
+
+      // Add a function to reset the bitrates when we haven't received an
+      // updated for more than 3 seconds.
+      interval_function = setInterval( function()
+      {
+        if (msgCount === oldmsgCount)
+        {
+          temp = {bitrates:{length:0}};
+          bitrate_list_handler(temp);
+        }
+
+        oldmsgCount = msgCount;
+      }, 3000);
 
   });
 
