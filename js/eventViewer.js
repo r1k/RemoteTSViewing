@@ -154,15 +154,17 @@ var filterMessages = function (msg, msg_handler_list)
 };
 
 
-function connectWebSocket(ws_uri, websocket, msg_handler_list)
+function connectWebSocket(ws_uri, msg_handler_list)
 {
   // Create the websocket and configure the callback functions
-  websocket = new WebSocket(ws_uri);
+  var websocket = new WebSocket(ws_uri);
   websocket.onmessage = function(evt) {
     obj = JSON && JSON.parse(evt.data) || $.parseJSON(evt.data);
 
     msg = filterMessages(obj, msg_handler_list);
   };
+
+  return websocket;
 }
 
 
@@ -236,13 +238,15 @@ var main = function() {
       var server_details = document.getElementById("server");
       var details = input_field.value.split(':')
       server_address = details[0]
-      port = details[1]
-      server_details.innerHTML = "Server: " + server_address + " port: " + port;
+      port = parseInt(details[1])
+      server_details.innerHTML = "Server: " + server_address + " port: " + port.toString();
       serverFound = true;
 
-      var wsUri = "ws://" + server_address + ":" + port;
+      var control_wsUri = "ws://" + server_address + ":" + port.toString();
+      var stream_wsUri = "ws://" + server_address + ":" + (port+1).toString();
 
-      console.log(wsUri);
+      console.log(control_wsUri);
+      console.log(stream_wsUri);
 
       msgCount = 0;
       seriesData = [ new Array(0) ];
@@ -255,9 +259,9 @@ var main = function() {
                 }
               ]
 
-      connectWebSocket(wsUri, control_websocket, control_msg_handler_list);
-      control_websocket.send(source_request_message);
-      //connectWebSocket(wsUri, stream_websocket, stream_msg_handler_list);
+      control_websocket = connectWebSocket(control_wsUri, control_msg_handler_list);
+      //control_websocket.send(source_request_message);
+      stream_websocket = connectWebSocket(stream_wsUri, stream_msg_handler_list);
       //stream_websocket.send(message);
 
   });
