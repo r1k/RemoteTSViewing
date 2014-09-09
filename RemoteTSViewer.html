@@ -37,9 +37,18 @@
         <!-- from example here http://jasny.github.io/bootstrap/examples/navmenu/ -->
         <a class="navmenu-brand visible-md visible-lg" href="#">Event Viewer</a>
         <ul class="nav navmenu-nav">
-            <li class="active-primary" name=".server_settings"><a>Set Server</a></li>
-            <li name=".bitrate_table"><a>Bitrates</a></li>
-            <li name=".bitrate_graph"><a>Bitrate Graph</a></li>
+
+            <li class="menu-selector active-primary" name=".conn_status"><a>Connection Status</a></li>
+            <li class="menu-selector" name=".bitrate_table"><a>Bitrates</a></li>
+            <li class="menu-selector" name=".bitrate_graph"><a>Bitrate Graph</a></li>
+
+            <li class="dropdown">
+              <a class="dropdown-toggle" data-toggle="dropdown">Settings <b class="caret"></b></a>
+                <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
+                    <li class="menu-selector" name=".server_settings"><a>Set Server</a></li>
+                    <li class="menu-selector" name=".source_settings"><a>Source Settings</a></li>
+                  </ul>
+            </li>
         </ul>
     </div>
 
@@ -53,11 +62,31 @@
     </div>
     <!-- End of menu------------------------------------------------------------------------------- -->
 
+    <!-- Connection Status------------------------------------------------------------------------- -->
+    <div class="container conn_status">
+        <div class="page-header">
+            <div class="panel panel-primary">
 
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        Connection Status
+                    </h3>
+                </div>
 
+                <div class="panel-body">
 
+                    <div class="alert status-server-box" style="padding-top:15px" role="alert">
+                        <a class="lead alert-link status-server"></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End of Connection Status------------------------------------------------------------------ -->
+
+    <!-- Settings --------------------------------------------------------------------------------- -->
     <!-- Server settings--------------------------------------------------------------------------- -->
-    <div class="container server_settings">
+    <div class="container server_settings" style="display:none">
         <div class="page-header">
             <div class="panel panel-primary">
 
@@ -68,25 +97,61 @@
                 </div>
 
                 <div class="panel-body">
-                    <form class="form-inline" role="form">
+                    <form class="form-inline" role="form" style="padding-bottom:15px">
                         <div class="input-group">
-                            <input class="form-control input-lg" id='iserver' type="text" maxlength="24" placeholder='127.0.0.1:8888'></input>
+                            <input class="form-control input" id='iserver' type="text" maxlength="24" placeholder='127.0.0.1:8888'></input>
                             <span class="input-group-btn">
-                                <button id="setServer" type="button" class="btn btn-primary btn-lg">Set Server</button>
+                                <button id="setServer" type="button" class="btn btn-primary">Set Server</button>
                             </span>
                         </div>
                     </form>
-                    <div style="padding-top:15px">
-                        <p class='lead' style="margin-bottom:0px" id='server'>Server:</p>
+                    <div class="alert status-server-box" style="padding-top:15px" role="alert">
+                        <a class="lead alert-link status-server"></a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-
     <!-- End of Server settings-------------------------------------------------------------------- -->
+    <!-- Source settings--------------------------------------------------------------------------- -->
+    <div class="container source_settings" style="display:none">
+        <div class="page-header">
+            <div class="panel panel-primary">
 
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        Source configuration
+                    </h3>
+                </div>
+
+                <div class="panel-body">
+                    <h4>Current Sources</h4>
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th style="width:70%">IP Address:Port</th>
+                                <th style="width:15%">Selected</th>
+                                <th style="width:15%">Remove</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                    <h4>Add new source</h4>
+                    <form class="form" role="form">
+                        <div class="input-group">
+                            <input class="form-control input" id='iserver' type="text" maxlength="24" placeholder='127.0.0.1:8888'></input>
+                            <span class="input-group-btn">
+                                <button id="setServer" type="button" class="btn btn-primary">Add source</button>
+                            </span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End of Source settings-------------------------------------------------------------------- -->
+    <!-- End of Settings--------------------------------------------------------------------------- -->
 
 
 

@@ -185,7 +185,53 @@ function doSend(message, websocket)
 
 
 
+function start_new_session(server_address, server_port)
+{
+  var server_details = $('.status-server');
+  var port = parseInt(server_port);
+  server_details.html("Connected to server: " + server_address + " port: " + port.toString());
+  serverFound = true;
 
+  var control_wsUri = "ws://" + server_address + ":" + port.toString();
+  var stream_wsUri = "ws://" + server_address + ":" + (port+1).toString();
+
+  console.log(control_wsUri);
+  console.log(stream_wsUri);
+
+  control_websocket = connectWebSocket(control_wsUri, control_msg_handler_list);
+  control_websocket.onopen = function() {
+    $('.status-server-box').removeClass('alert-danger');
+    $('.status-server-box').addClass('alert-success');
+  };
+  control_websocket.onclose = function() {
+      $('.status-server-box').removeClass('alert-success');
+      $('.status-server-box').addClass('alert-danger');
+  };
+
+
+  //control_websocket.send(source_request_message);
+  stream_websocket = connectWebSocket(stream_wsUri, stream_msg_handler_list);
+  //stream_websocket.send(message);
+
+
+  if (interval_function)
+  {
+    clearInterval(interval_function);
+  }
+
+  // Add a function to reset the bitrates when we haven't received an
+  // updated for more than 3 seconds.
+  interval_function = setInterval( function()
+                                  {
+                                    if (msgCount === oldmsgCount)
+                                    {
+                                      temp = {bitrates:{length:0}};
+                                      bitrate_list_handler(temp);
+                                    }
+
+                                    oldmsgCount = msgCount;
+                                  }, 3000);
+}
 
 
 
@@ -204,10 +250,10 @@ var main = function() {
   stream_msg_handler_list.push({type:"bitrate_event", handler:bitrate_event_handler});
   stream_msg_handler_list.push({type:"bitrate_list", handler:bitrate_list_handler});
 
-  $('.navmenu-nav > li').click( function()
+  $('.menu-selector').click( function()
   {
     // Highlight the current selection
-    $('.navmenu-nav > li').removeClass('active-primary');
+    $('.menu-selector').removeClass('active-primary');
     $(this).addClass('active-primary');
 
 
@@ -217,10 +263,10 @@ var main = function() {
 
   window.onbeforeunload = closingCode;
 
-  QueryString();
+  var qs = QueryString();
 
-  server_address = QueryString.ip;
-  port = QueryString.port;
+  server_address = qs.ip;
+  port = qs.port;
   if (server_address === undefined)
   {
     server_address = "---";
@@ -229,32 +275,23 @@ var main = function() {
   }
   else
   {
-    wsUri = "ws://" + server_address + ":" + port;
-    console.log(wsUri);
-
-    testWebSocket();
     serverFound = true;
+
+    start_new_session(server_address, port);
   }
 
-  var server_details = document.getElementById("server");
-  server_details.innerHTML += " " + server_address + " " + port;
+  var server_details = $('.status-server');
+  server_details.html("Server " + server_address + " " + port);
 
 
   $('#setServer').click(function ()
   {
       var input_field = document.getElementById('iserver');
-      var server_details = document.getElementById("server");
       var details = input_field.value.split(':')
       server_address = details[0]
-      port = parseInt(details[1])
-      server_details.innerHTML = "Server: " + server_address + " port: " + port.toString();
-      serverFound = true;
+      port = details[1]
 
-      var control_wsUri = "ws://" + server_address + ":" + port.toString();
-      var stream_wsUri = "ws://" + server_address + ":" + (port+1).toString();
-
-      console.log(control_wsUri);
-      console.log(stream_wsUri);
+      start_new_session(server_address, port);
 
       msgCount = 0;
       seriesData = [ new Array(0) ];
@@ -267,29 +304,7 @@ var main = function() {
                 }
               ]
 
-      control_websocket = connectWebSocket(control_wsUri, control_msg_handler_list);
-      //control_websocket.send(source_request_message);
-      stream_websocket = connectWebSocket(stream_wsUri, stream_msg_handler_list);
-      //stream_websocket.send(message);
 
-
-      if (interval_function)
-      {
-        clearInterval(interval_function);
-      }
-
-      // Add a function to reset the bitrates when we haven't received an
-      // updated for more than 3 seconds.
-      interval_function = setInterval( function()
-      {
-        if (msgCount === oldmsgCount)
-        {
-          temp = {bitrates:{length:0}};
-          bitrate_list_handler(temp);
-        }
-
-        oldmsgCount = msgCount;
-      }, 3000);
 
   });
 
