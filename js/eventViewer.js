@@ -224,7 +224,7 @@ function connectToSource(host, port, name)
 {
   var websckt = connectWebSocket(host, port, stream_msg_handler_list);
   websckt.onopen = function() {
-    $('.status-'+name).html("Connected to source: " + host + ":" + port);
+    $('.status-'+name).html("Connected to " + name +": " + host + ":" + port);
     $('.status-'+name+'-box').removeClass('alert-danger');
     $('.status-'+name+'-box').addClass('alert-success');
     if (name === "server")
