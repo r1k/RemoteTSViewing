@@ -1,9 +1,3 @@
-var server_address;
-var port;
-var serverFound = true;
-
-var wsUri = "ws://10.20.9.1:8889";
-
 var stream_msg_handler_list = [];
 var control_msg_handler_list = [];
 var msgCount = 0;
@@ -11,7 +5,6 @@ var oldmsgCount = 0;
 
 var stream_websocket;
 var control_websocket;
-
 
 var interval_function;
 
@@ -42,7 +35,14 @@ var source_request_message = JSON.stringify({"Request" : "source_list"});
 
 function closingCode()
 {
-  websocket.close();
+  if (stream_websocket)
+  {
+    stream_websocket.close();
+  }
+  if (control_websocket)
+  {
+    control_websocket.close();
+  }
   return null;
 }
 
@@ -162,9 +162,10 @@ var filterMessages = function (msg, msg_handler_list)
 };
 
 
-function connectWebSocket(ws_uri, msg_handler_list)
+function connectWebSocket(host, port, msg_handler_list)
 {
   // Create the websocket and configure the callback functions
+  var ws_uri = "ws://" + host + ":" + port;
   var websocket = new WebSocket(ws_uri);
   websocket.onmessage = function(evt) {
     obj = JSON && JSON.parse(evt.data) || $.parseJSON(evt.data);
@@ -179,7 +180,6 @@ function connectWebSocket(ws_uri, msg_handler_list)
 function doSend(message, websocket)
 {
   console.log("SENT: " + message);
-
 }
 
 
@@ -187,55 +187,63 @@ function doSend(message, websocket)
 
 function start_new_session(server_address, server_port)
 {
-  var server_details = $('.status-server');
-  var port = parseInt(server_port);
-  server_details.html("Connected to server: " + server_address + " port: " + port.toString());
-  serverFound = true;
-
-  var control_wsUri = "ws://" + server_address + ":" + port.toString();
-  var stream_wsUri = "ws://" + server_address + ":" + (port+1).toString();
-
-  console.log(control_wsUri);
-  console.log(stream_wsUri);
-
-  control_websocket = connectWebSocket(control_wsUri, control_msg_handler_list);
-  control_websocket.onopen = function() {
-    $('.status-server-box').removeClass('alert-danger');
-    $('.status-server-box').addClass('alert-success');
-  };
-  control_websocket.onclose = function() {
-      $('.status-server-box').removeClass('alert-success');
-      $('.status-server-box').addClass('alert-danger');
-  };
-
-
-  //control_websocket.send(source_request_message);
-  stream_websocket = connectWebSocket(stream_wsUri, stream_msg_handler_list);
-  //stream_websocket.send(message);
-
-
-  if (interval_function)
+  if ((server_address !== undefined) && (server_port !== undefined))
   {
-    clearInterval(interval_function);
-  }
+    var port = parseInt(server_port);
 
-  // Add a function to reset the bitrates when we haven't received an
-  // updated for more than 3 seconds.
-  interval_function = setInterval( function()
-                                  {
-                                    if (msgCount === oldmsgCount)
+    control_websocket = connectToSource(server_address, server_port, 'server');
+    stream_websocket = connectToSource(server_address, (port+1).toString(), 'source');
+
+
+    //control_websocket.send(source_request_message);
+    //stream_websocket.send(message);
+
+    if (interval_function)
+    {
+      clearInterval(interval_function);
+    }
+
+    // Add a function to reset the bitrates when we haven't received an
+    // updated for more than 3 seconds.
+    interval_function = setInterval( function()
                                     {
-                                      temp = {bitrates:{length:0}};
-                                      bitrate_list_handler(temp);
-                                    }
+                                      if (msgCount === oldmsgCount)
+                                      {
+                                        temp = {bitrates:{length:0}};
+                                        bitrate_list_handler(temp);
+                                      }
 
-                                    oldmsgCount = msgCount;
-                                  }, 3000);
+                                      oldmsgCount = msgCount;
+                                    }, 3000);
+  }
 }
 
 
 
+function connectToSource(host, port, name)
+{
+  var websckt = connectWebSocket(host, port, stream_msg_handler_list);
+  websckt.onopen = function() {
+    $('.status-'+name).html("Connected to source: " + host + ":" + port);
+    $('.status-'+name+'-box').removeClass('alert-danger');
+    $('.status-'+name+'-box').addClass('alert-success');
+    if (name === "server")
+    {
+      $('.status-server-badge').html('Connected');
+    }
+  };
+  websckt.onclose = function() {
+    $('.status-'+name).html("Not connected");
+    $('.status-'+name+'-box').removeClass('alert-success');
+    $('.status-'+name+'-box').addClass('alert-danger');
+    if (name === "server")
+    {
+      $('.status-server-badge').html('Disconnected');
+    }
+  };
 
+  return websckt
+}
 
 
 
@@ -261,35 +269,12 @@ var main = function() {
     $('.container' + $(this).attr('name')).show();
   });
 
-  window.onbeforeunload = closingCode;
-
-  var qs = QueryString();
-
-  server_address = qs.ip;
-  port = qs.port;
-  if (server_address === undefined)
-  {
-    server_address = "---";
-    port = "---"
-    serverFound = false;
-  }
-  else
-  {
-    serverFound = true;
-
-    start_new_session(server_address, port);
-  }
-
-  var server_details = $('.status-server');
-  server_details.html("Server " + server_address + " " + port);
-
-
   $('#setServer').click(function ()
   {
       var input_field = document.getElementById('iserver');
       var details = input_field.value.split(':')
-      server_address = details[0]
-      port = details[1]
+      var server_address = details[0]
+      var port = details[1]
 
       start_new_session(server_address, port);
 
@@ -303,10 +288,14 @@ var main = function() {
                   updated:false
                 }
               ]
-
-
-
   });
+
+  window.onbeforeunload = closingCode;
+
+  var qs = QueryString();
+  start_new_session(qs.ip, qs.port);
+
+
 
 }
 
