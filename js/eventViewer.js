@@ -1,11 +1,11 @@
 var stream_msg_handler_list = [];
-var control_msg_handler_list = [];
-var msgCount = 0;
-var oldmsgCount = 0;
 
 var stream_websocket;
 var control_websocket;
 
+
+var msgCount = 0;
+var oldmsgCount = 0;
 var interval_function;
 
 
@@ -31,7 +31,8 @@ var sources = [
   */
 ]
 
-var source_request_message = JSON.stringify({"Request" : "source_list"});
+var source_request_message = JSON.stringify({type:"request", what: "source_list"});
+
 
 function closingCode()
 {
@@ -138,7 +139,8 @@ var bitrate_list_handler = function(msg)
   return msg;
 }
 
-
+stream_msg_handler_list.push({type:"bitrate_event", handler:bitrate_event_handler});
+stream_msg_handler_list.push({type:"bitrate_list", handler:bitrate_list_handler});
 
 
 
@@ -167,6 +169,7 @@ function connectWebSocket(host, port, msg_handler_list)
   // Create the websocket and configure the callback functions
   var ws_uri = "ws://" + host + ":" + port;
   var websocket = new WebSocket(ws_uri);
+
   websocket.onmessage = function(evt) {
     obj = JSON && JSON.parse(evt.data) || $.parseJSON(evt.data);
 
@@ -177,10 +180,15 @@ function connectWebSocket(host, port, msg_handler_list)
 }
 
 
+
+
+
 function doSend(message, websocket)
 {
   console.log("SENT: " + message);
 }
+
+
 
 
 
@@ -192,11 +200,6 @@ function start_new_session(server_address, server_port)
     var port = parseInt(server_port);
 
     control_websocket = connectToSource(server_address, server_port, 'server');
-    stream_websocket = connectToSource(server_address, (port+1).toString(), 'source');
-
-
-    //control_websocket.send(source_request_message);
-    //stream_websocket.send(message);
 
     if (interval_function)
     {
@@ -205,24 +208,35 @@ function start_new_session(server_address, server_port)
 
     // Add a function to reset the bitrates when we haven't received an
     // updated for more than 3 seconds.
-    interval_function = setInterval( function()
-                                    {
-                                      if (msgCount === oldmsgCount)
-                                      {
-                                        temp = {bitrates:{length:0}};
-                                        bitrate_list_handler(temp);
-                                      }
+    interval_function = setInterval( function() {
+      if (msgCount === oldmsgCount)
+      {
+        temp = {bitrates:{length:0}};
+        bitrate_list_handler(temp);
+      }
 
-                                      oldmsgCount = msgCount;
-                                    }, 3000);
+      oldmsgCount = msgCount;
+    }, 3000);
   }
 }
 
 
 
+
+
+
 function connectToSource(host, port, name)
 {
-  var websckt = connectWebSocket(host, port, stream_msg_handler_list);
+  var websckt;
+  if (name === "server")
+  {
+    websckt = connectWebSocket(host, port, control_msg_handler_list);
+  }
+  else if (name === "source")
+  {
+    websckt = connectWebSocket(host, port, stream_msg_handler_list);
+  }
+
   websckt.onopen = function() {
     $('.status-'+name).html("Connected to " + name +": " + host + ":" + port);
     $('.status-'+name+'-box').removeClass('alert-danger');
@@ -230,8 +244,11 @@ function connectToSource(host, port, name)
     if (name === "server")
     {
       $('.status-server-badge').html('Connected');
+
+      websckt.send(source_request_message);
     }
   };
+
   websckt.onclose = function() {
     $('.status-'+name).html("Not connected");
     $('.status-'+name+'-box').removeClass('alert-success');
@@ -255,9 +272,6 @@ function connectToSource(host, port, name)
 
 var main = function() {
 
-  stream_msg_handler_list.push({type:"bitrate_event", handler:bitrate_event_handler});
-  stream_msg_handler_list.push({type:"bitrate_list", handler:bitrate_list_handler});
-
   $('.menu-selector').click( function()
   {
     // Highlight the current selection
@@ -272,9 +286,9 @@ var main = function() {
   $('#setServer').click(function ()
   {
       var input_field = document.getElementById('iserver');
-      var details = input_field.value.split(':')
-      var server_address = details[0]
-      var port = details[1]
+      var details = input_field.value.split(':');
+      var server_address = details[0];
+      var port = details[1];
 
       start_new_session(server_address, port);
 
@@ -287,7 +301,27 @@ var main = function() {
                   pid: 0,
                   updated:false
                 }
-              ]
+              ];
+  });
+
+  $('#addSource').click(function ()
+  {
+      // Request the server to open a new connection
+      var input_field = document.getElementById('imcast');
+      var details = input_field.value.split(':');
+
+      // Send source message
+      msg = {
+        type: 'add_source',
+        ip: details[0],
+        port: details[1],
+        interface: details[2]
+      }
+
+      // Send message to add new
+      control_websocket.send(JSON.stringify(msg));
+
+      // Adding a new source will cause the server to broadcast a source list update
   });
 
   window.onbeforeunload = closingCode;
@@ -295,11 +329,7 @@ var main = function() {
   var qs = QueryString();
   start_new_session(qs.ip, qs.port);
 
-
-
 }
-
-
 
 
 $(document).ready(main);

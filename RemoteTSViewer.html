@@ -134,9 +134,9 @@
                     <h4>Add new source</h4>
                     <form class="form" role="form">
                         <div class="input-group">
-                            <input class="form-control input" id='iserver' type="text" maxlength="24" placeholder='127.0.0.1:8888'></input>
+                            <input class="form-control input" id="imcast" type="text" maxlength="24" placeholder='127.0.0.1:8888:0.0.0.0 <ip address>:<port>:<interface address>'></input>
                             <span class="input-group-btn">
-                                <button id="setServer" type="button" class="btn btn-primary">Add source</button>
+                                <button id="addSource" type="button" class="btn btn-primary">Add source</button>
                             </span>
                         </div>
                     </form>
@@ -199,6 +199,7 @@
 
 
     <script src="js/support.js"></script>
+    <script src="js/control.js"></script>
     <script src="js/plugins.js"></script>
     <script src="js/eventViewer.js"></script>
 </body>
