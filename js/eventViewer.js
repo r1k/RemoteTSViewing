@@ -1,18 +1,33 @@
-var stream_msg_handler_list = [];
+var server_address;
+var port;
+var serverFound = true;
 
-var stream_websocket;
-var control_websocket;
+var wsUri = "ws://10.20.9.1:8889";
 
-
+var msg_handler_list = [];
 var msgCount = 0;
-var oldmsgCount = 0;
-var interval_function;
 
+var websocket;
 
-//Stream data store
+//Rickshaw stuff
+var palette = new Rickshaw.Color.Palette( { scheme: 'classic9' } );
+var graph;
+var messages = [
+      "Changed home page welcome message",
+      "Minified JS and CSS",
+      "Changed button color from blue to green",
+      "Refactored SQL query to use indexed columns",
+      "Added additional logging for debugging",
+      "Fixed typo",
+      "Rewrite conditional logic for clarity",
+      "Added documentation for new methods"
+    ];
+
+//Data store
 var seriesData = [ new Array(0) ];
 var series = [
 		{
+			color: palette.color(),
 			data: seriesData[0],
 			name: '0',
       pid: 0,
@@ -20,31 +35,79 @@ var series = [
 		}
 	]
 
-//Source data store
-var sources = [
-  /*
-  {
-    multicastIP: '236.9.1.1',
-    multicastPort: 5000,
-    wsUri: 'localhost:8889'
-  },
-  */
-]
-
-var source_request_message = JSON.stringify({type:"request", what: "source_list"});
-
-
-function closingCode()
+var QueryString = function ()
 {
-  if (stream_websocket)
+  // This function is anonymous, is executed immediately and
+  // the return value is assigned to QueryString!
+  var query_string = {};
+  var query = window.location.search.substring(1);
+  var vars = query.split("&");
+
+  for (var i = 0; i < vars.length; i++)
   {
-    stream_websocket.close();
+
+    var pair = vars[i].split("=");
+
+    if (typeof query_string[pair[0]] === "undefined")
+    {
+      // If first entry with this name
+      query_string[pair[0]] = pair[1];
+    }
+    else if (typeof query_string[pair[0]] === "string")
+    {
+      // If second entry with this name
+      var arr = [ query_string[pair[0]], pair[1] ];
+      query_string[pair[0]] = arr;
+
+    }
+    else
+    {
+      // If third or later entry with this name
+      query_string[pair[0]].push(pair[1]);
+    }
   }
-  if (control_websocket)
+  return query_string;
+};
+
+var prettifyBitrate = function ( br )
+{
+  var units = " bps";
+  br = parseFloat(br);
+
+  if (br > 1000)
   {
-    control_websocket.close();
+    br /= 1000;
+    units = " kbps";
   }
-  return null;
+
+  if (br > 1000)
+  {
+    br /= 1000;
+    units = " Mbps"
+  }
+
+  return parseFloat(br).toFixed(2).toString() + units
+}
+
+var updateDisplay = function ()
+{
+  var tableString = ""
+  var totalBitrate = 0;
+  var i;
+  for (i = 0; i < series.length; i++)
+  {
+    var br = series[i].data[series[i].data.length - 1].y;
+    totalBitrate += br;
+    var line = "<tr><td>" + series[i].name + "</td><td>" + prettifyBitrate(br) + "</td></tr>"
+
+    tableString += line;
+
+  }
+
+  var line = "<tr><td>Total</td><td>" + prettifyBitrate(totalBitrate) + "</td></tr>"
+  tableString += line;
+
+  $('#bitrateTableBody').html(tableString);
 }
 
 var new_bitrate_arrived = function(pid, bitrate, time)
@@ -77,14 +140,13 @@ var new_bitrate_arrived = function(pid, bitrate, time)
 
     series.splice(i, 0,
                   {
+                    color: palette.color(),
                     data: seriesData[i],
                     name: pid.toString(),
                     pid: pid,
                     updated:true
                   });
   }
-
-  msgCount += 1;
 }
 
 var bitrate_event_handler = function(msg)
@@ -132,20 +194,10 @@ var bitrate_list_handler = function(msg)
 			series.shift();
 	  });
   }
-
-  updateBitrateTable(series);
-
-  msgCount += 1;
   return msg;
 }
 
-stream_msg_handler_list.push({type:"bitrate_event", handler:bitrate_event_handler});
-stream_msg_handler_list.push({type:"bitrate_list", handler:bitrate_list_handler});
-
-
-
-
-var filterMessages = function (msg, msg_handler_list)
+var filterMessages = function (msg)
 {
   var i = 0;
   var processed_msg = null;
@@ -155,127 +207,89 @@ var filterMessages = function (msg, msg_handler_list)
     if (msg_handler_list[i].type === msg.type)
     {
       processed_msg = msg_handler_list[i].handler(msg);
-      return true;
+      break;
     }
   }
 
-  console.log("Unkown message received");
-  return false;
+  if (processed_msg)
+  {
+    updateDisplay();
+  }
+  else
+  {
+    console.log("Unkown message received");
+  }
+
+  return processed_msg;
 };
 
-
-function connectWebSocket(host, port, msg_handler_list)
+function testWebSocket()
 {
   // Create the websocket and configure the callback functions
-  var ws_uri = "ws://" + host + ":" + port;
-  var websocket = new WebSocket(ws_uri);
-
-  websocket.onmessage = function(evt) {
-    obj = JSON && JSON.parse(evt.data) || $.parseJSON(evt.data);
-
-    msg = filterMessages(obj, msg_handler_list);
-  };
-
-  return websocket;
+  websocket = new WebSocket(wsUri);
+  websocket.onopen = function(evt) { onOpen(evt) };
+  websocket.onclose = function(evt) { onClose(evt) };
+  websocket.onmessage = function(evt) { onMessage(evt) };
+  websocket.onerror = function(evt) { onError(evt) };
 }
 
+function onOpen(evt)
+{
+  console.log("CONNECTED");
+}
 
+function onClose(evt)
+{
+  console.log("DISCONNECTED");
+}
 
+function onMessage(evt)
+{
+  obj = JSON && JSON.parse(evt.data) || $.parseJSON(evt.data);
 
+  msg = filterMessages(obj);
 
-function doSend(message, websocket)
+  if (msg)
+  {
+    msgCount += 1;
+    if (msgCount > 1000)
+    {
+      websocket.close();
+    }
+  }
+}
+
+function onError(evt)
+{
+  console.log('ERROR: ' + evt.data);
+}
+
+function doSend(message)
 {
   console.log("SENT: " + message);
+  websocket.send(message);
 }
 
-
-
-
-
-
-function start_new_session(server_address, server_port)
+function writeToScreen(message)
 {
-  if ((server_address !== undefined) && (server_port !== undefined))
-  {
-    var port = parseInt(server_port);
-
-    control_websocket = connectToSource(server_address, server_port, 'server');
-
-    if (interval_function)
-    {
-      clearInterval(interval_function);
-    }
-
-    // Add a function to reset the bitrates when we haven't received an
-    // updated for more than 3 seconds.
-    interval_function = setInterval( function() {
-      if (msgCount === oldmsgCount)
-      {
-        temp = {bitrates:{length:0}};
-        bitrate_list_handler(temp);
-      }
-
-      oldmsgCount = msgCount;
-    }, 3000);
-  }
+  console.log(message);
 }
 
-
-
-
-
-
-function connectToSource(host, port, name)
+function closingCode()
 {
-  var websckt;
-  if (name === "server")
-  {
-    websckt = connectWebSocket(host, port, control_msg_handler_list);
-  }
-  else if (name === "source")
-  {
-    websckt = connectWebSocket(host, port, stream_msg_handler_list);
-  }
-
-  websckt.onopen = function() {
-    $('.status-'+name).html("Connected to " + name +": " + host + ":" + port);
-    $('.status-'+name+'-box').removeClass('alert-danger');
-    $('.status-'+name+'-box').addClass('alert-success');
-    if (name === "server")
-    {
-      $('.status-server-badge').html('Connected');
-
-      websckt.send(source_request_message);
-    }
-  };
-
-  websckt.onclose = function() {
-    $('.status-'+name).html("Not connected");
-    $('.status-'+name+'-box').removeClass('alert-success');
-    $('.status-'+name+'-box').addClass('alert-danger');
-    if (name === "server")
-    {
-      $('.status-server-badge').html('Disconnected');
-    }
-  };
-
-  return websckt
+  websocket.close();
+   return null;
 }
-
-
-
-
-
-
-
-
 
 var main = function() {
 
-  $('.menu-selector').click( function()
+  msg_handler_list.push({type:"bitrate_event", handler:bitrate_event_handler});
+  msg_handler_list.push({type:"bitrate_list", handler:bitrate_list_handler});
+
+  $('.navmenu-nav > li').click( function()
   {
     // Highlight the current selection
-    $('.menu-selector').removeClass('active-primary');
+    $('.navmenu-nav > li').removeClass('active-primary');
     $(this).addClass('active-primary');
 
 
@@ -283,53 +297,198 @@ var main = function() {
     $('.container' + $(this).attr('name')).show();
   });
 
+  QueryString();
+
+  server_address = QueryString.ip;
+  port = QueryString.port;
+  if (server_address === undefined)
+  {
+    server_address = "---";
+    port = "---"
+    serverFound = false;
+  }
+  else
+  {
+    wsUri = "ws://" + server_address + ":" + port;
+    console.log(wsUri);
+
+    testWebSocket();
+    serverFound = true;
+  }
+
+  var server_details = document.getElementById("server");
+  server_details.innerHTML += " " + server_address + " " + port;
+
+  //var smoothie = new SmoothieChart();
+  //smoothie.streamTo(document.getElementById("mycanvas"));
+
   $('#setServer').click(function ()
   {
       var input_field = document.getElementById('iserver');
-      var details = input_field.value.split(':');
-      var server_address = details[0];
-      var port = details[1];
+      var server_details = document.getElementById("server");
+      var details = input_field.value.split(':')
+      server_address = details[0]
+      port = details[1]
+      server_details.innerHTML = "Server: " + server_address + " port: " + port;
+      serverFound = true;
 
-      start_new_session(server_address, port);
+      wsUri = "ws://" + server_address + ":" + port;
+
+      console.log(wsUri);
 
       msgCount = 0;
       seriesData = [ new Array(0) ];
       series = [
                 {
+                  color: palette.color(),
                   data: seriesData[0],
                   name: '0',
                   pid: 0,
                   updated:false
                 }
-              ];
-  });
+              ]
 
-  $('#addSource').click(function ()
-  {
-      // Request the server to open a new connection
-      var input_field = document.getElementById('imcast');
-      var details = input_field.value.split(':');
+      testWebSocket();
 
-      // Send source message
-      msg = {
-        type: 'add_source',
-        ip: details[0],
-        port: details[1],
-        interface: details[2]
-      }
-
-      // Send message to add new
-      control_websocket.send(JSON.stringify(msg));
-
-      // Adding a new source will cause the server to broadcast a source list update
   });
 
   window.onbeforeunload = closingCode;
 
-  var qs = QueryString();
-  start_new_session(qs.ip, qs.port);
+
+
+
+  // Rickshaw code below
+
+
+
+
+
+
+
+// instantiate our graph!
+  var create_graph = function()
+  {
+
+    graph = new Rickshaw.Graph( {
+      element: document.getElementById("chart"),
+      width: 720,
+      height: 400,
+      renderer: 'area',
+      stroke: true,
+      preserve: true,
+      series: series
+    } );
+
+    graph.render();
+
+    var preview = new Rickshaw.Graph.RangeSlider( {
+      graph: graph,
+      element: document.getElementById('preview'),
+    } );
+
+    var hoverDetail = new Rickshaw.Graph.HoverDetail( {
+      graph: graph,
+      xFormatter: function(x) {
+        return new Date(x * 1000).toString();
+      }
+    } );
+
+    var annotator = new Rickshaw.Graph.Annotate( {
+      graph: graph,
+      element: document.getElementById('timeline')
+    } );
+
+    var legend = new Rickshaw.Graph.Legend( {
+      graph: graph,
+      element: document.getElementById('legend')
+
+    } );
+
+    var shelving = new Rickshaw.Graph.Behavior.Series.Toggle( {
+      graph: graph,
+      legend: legend
+    } );
+
+    var order = new Rickshaw.Graph.Behavior.Series.Order( {
+      graph: graph,
+      legend: legend
+    } );
+
+    var highlighter = new Rickshaw.Graph.Behavior.Series.Highlight( {
+      graph: graph,
+      legend: legend
+    } );
+
+    var smoother = new Rickshaw.Graph.Smoother( {
+      graph: graph,
+      element: document.querySelector('#smoother')
+    } );
+
+    var ticksTreatment = 'glow';
+
+    var xAxis = new Rickshaw.Graph.Axis.Time( {
+      graph: graph,
+      ticksTreatment: ticksTreatment,
+      timeFixture: new Rickshaw.Fixtures.Time.Local()
+    } );
+
+    xAxis.render();
+
+    var yAxis = new Rickshaw.Graph.Axis.Y( {
+      graph: graph,
+      tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
+      ticksTreatment: ticksTreatment
+    } );
+
+    yAxis.render();
+
+
+    var controls = new RenderControls( {
+      element: document.querySelector('#side_panel'),
+      graph: graph
+    } );
+
+    // add some data every so often
+    function addAnnotation(force) {
+      if (messages.length > 0 && (force || Math.random() >= 0.95)) {
+        annotator.add(seriesData[2][seriesData[2].length-1].x, messages.shift());
+        annotator.update();
+      }
+    }
+
+    addAnnotation(true);
+    setTimeout( function() { setInterval( addAnnotation, 6000 ) }, 6000 );
+
+    var previewXAxis = new Rickshaw.Graph.Axis.Time({
+      graph: preview.previews[0],
+      timeFixture: new Rickshaw.Fixtures.Time.Local(),
+      ticksTreatment: ticksTreatment
+    });
+
+    previewXAxis.render();
+
+  }
+
+  /*setInterval( function() {
+    if (graph===undefined && seriesData[0].length > 20)
+    {
+      create_graph();
+    }
+    else
+    {
+      graph && graph.update();
+    }
+
+  }, 500 );
+
+
+*/
+
+
 
 }
+
+
 
 
 $(document).ready(main);

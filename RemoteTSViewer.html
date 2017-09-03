@@ -4,7 +4,7 @@
 <!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
 <!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
 <head>
-    <title>RemoteTSViewer</title>
+    <title>CrudPuppy</title>
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -12,8 +12,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Bootstrap -->
-    <link href="css/bootstrap.css" rel="stylesheet" media="screen">
-    <link href="css/jasny-bootstrap.css" rel="stylesheet" media="screen">
+    <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="css/jasny-bootstrap.min.css" rel="stylesheet" media="screen">
 
     <!-- Custom styles for this template -->
     <link href="css/navmenu.css" rel="stylesheet">
@@ -28,6 +28,52 @@
 
     <!--<script type='text/javascript' id='lt_ws' src='http://localhost:6942/socket.io/lighttable/ws.js'></script>-->
 
+
+
+    <!-- Rickshaw content -->
+    <link type="text/css" rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css">
+    <link type="text/css" rel="stylesheet" href="css/vendor/Rickshaw/graph.css">
+	<link type="text/css" rel="stylesheet" href="css/vendor/Rickshaw/detail.css">
+	<link type="text/css" rel="stylesheet" href="css/vendor/Rickshaw/legend.css">
+	<link type="text/css" rel="stylesheet" href="css/vendor/Rickshaw/extensions.css?v=2">
+
+	<script src="js/vendor/d3.v3.js"></script>
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+	<script>
+		jQuery.noConflict();
+	</script>
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.15/jquery-ui.min.js"></script>
+
+    <script src="js/vendor/Rickshaw/Rickshaw.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Class.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Compat.ClassList.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.Renderer.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.Renderer.Area.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.Renderer.Line.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.Renderer.Bar.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.Renderer.ScatterPlot.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.Renderer.Stack.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.RangeSlider.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.RangeSlider.Preview.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.HoverDetail.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.Annotate.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.Legend.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.Axis.Time.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.Behavior.Series.Toggle.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.Behavior.Series.Order.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.Behavior.Series.Highlight.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.Smoother.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Fixtures.Time.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Fixtures.Time.Local.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Fixtures.Number.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Fixtures.Color.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Color.Palette.js"></script>
+	<script src="js/vendor/Rickshaw/Rickshaw.Graph.Axis.Y.js"></script>
+
+	<script src="js/vendor/Rickshaw/extensions.js"></script>
 </head>
 
 <body>
@@ -37,16 +83,9 @@
         <!-- from example here http://jasny.github.io/bootstrap/examples/navmenu/ -->
         <a class="navmenu-brand visible-md visible-lg" href="#">Event Viewer</a>
         <ul class="nav navmenu-nav">
-            <li class="menu-selector active-primary" name=".conn_status"><a>Connection Status<span class="badge pull-right status-server-badge">Disconnected</span></a></li>
-            <li class="menu-selector" name=".bitrate_table"><a>Bitrates</a></li>
-            <li class="menu-selector" name=".bitrate_graph"><a>Bitrate Graph</a></li>
-            <li class="dropdown">
-              <a class="dropdown-toggle" data-toggle="dropdown">Settings <b class="caret"></b></a>
-                <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
-                    <li class="menu-selector" name=".server_settings"><a>Set Server</a></li>
-                    <li class="menu-selector" name=".source_settings"><a>Source Settings</a></li>
-                  </ul>
-            </li>
+            <li class="active-primary" name=".server_settings"><a>Set Server</a></li>
+            <li name=".bitrate_table"><a>Bitrates</a></li>
+            <li name=".bitrate_graph"><a>Bitrate Graph</a></li>
         </ul>
     </div>
 
@@ -60,92 +99,40 @@
     </div>
     <!-- End of menu------------------------------------------------------------------------------- -->
 
-    <!-- Connection Status------------------------------------------------------------------------- -->
-    <div class="container conn_status">
-        <div class="page-header">
-            <div class="panel panel-primary">
-                <div class="panel-heading">
-                    <h3 class="panel-title">
-                        Connection Status
-                    </h3>
-                </div>
-                <div class="panel-body">
-                    <div class="alert status-server-box" style="padding-top:15px" role="alert">
-                        <a class="lead alert-link status-server"></a>
-                    </div>
-                    <div class="alert status-source-box" style="padding-top:15px" role="alert">
-                        <a class="lead alert-link status-source"></a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- End of Connection Status------------------------------------------------------------------ -->
 
-    <!-- Settings --------------------------------------------------------------------------------- -->
+
+
     <!-- Server settings--------------------------------------------------------------------------- -->
-    <div class="container server_settings" style="display:none">
+    <div class="container server_settings">
         <div class="page-header">
             <div class="panel panel-primary">
+
                 <div class="panel-heading">
                     <h3 class="panel-title">
                         Transport stream PID bitrates
                     </h3>
                 </div>
+
                 <div class="panel-body">
-                    <form class="form-inline" role="form" style="padding-bottom:15px">
+                    <form class="form-inline" role="form">
                         <div class="input-group">
-                            <input class="form-control input" id='iserver' type="text" maxlength="24" placeholder='127.0.0.1:8888'></input>
+                            <input class="form-control input-lg" id='iserver' type="text" maxlength="24" placeholder='127.0.0.1:8888'></input>
                             <span class="input-group-btn">
-                                <button id="setServer" type="button" class="btn btn-primary">Set Server</button>
+                                <button id="setServer" type="button" class="btn btn-primary btn-lg">Set Server</button>
                             </span>
                         </div>
                     </form>
-                    <div class="alert status-server-box" style="padding-top:15px" role="alert">
-                        <a class="lead alert-link status-server"></a>
+                    <div style="padding-top:15px">
+                        <p class='lead' style="margin-bottom:0px" id='server'>Server:</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+
     <!-- End of Server settings-------------------------------------------------------------------- -->
-    <!-- Source settings--------------------------------------------------------------------------- -->
-    <div class="container source_settings" style="display:none">
-        <div class="page-header">
-            <div class="panel panel-primary">
-                <div class="panel-heading">
-                    <h3 class="panel-title">
-                        Source configuration
-                    </h3>
-                </div>
-                <div class="panel-body">
-                    <h4>Current Sources</h4>
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th style="width:70%">IP Address:Port</th>
-                                <th style="width:15%">Selected</th>
-                                <th style="width:15%">Remove</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        </tbody>
-                    </table>
-                    <h4>Add new source</h4>
-                    <form class="form" role="form">
-                        <div class="input-group">
-                            <input class="form-control input" id="imcast" type="text" maxlength="24" placeholder='127.0.0.1:8888:0.0.0.0 <ip address>:<port>:<interface address>'></input>
-                            <span class="input-group-btn">
-                                <button id="addSource" type="button" class="btn btn-primary">Add source</button>
-                            </span>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- End of Source settings-------------------------------------------------------------------- -->
-    <!-- End of Settings--------------------------------------------------------------------------- -->
+
 
 
 
@@ -157,9 +144,8 @@
             <table class="table table-hover">
                 <thead>
                     <tr>
-                        <th style="width:20%">PID</th>
-                        <th style="width:20%">Birate</th>
-                        <th style="width:60%"></th>
+                        <th>PID</th>
+                        <th>Birate</th>
                     </tr>
                 </thead>
                 <tbody id="bitrateTableBody">
@@ -180,12 +166,74 @@
         <div class="page-header">
             <h3>Bitrate Graph</h3>
 
-            <div class="page-header">
+            <div class"page-header">
             <!--<canvas id="mycanvas" width="720" height="400"></canvas>-->
-                <!-- put the cubism.js graph in the next diff -->
-            <div class="row" id="cubism_graph">
 
-            </div>
+                <div id="content">
+
+
+
+                    <!-- Rickshaw content -->
+
+                    <form id="side_panel">
+                        <section><div id="legend"></div></section>
+                        <section>
+                            <div id="renderer_form" class="toggler">
+                                <input type="radio" name="renderer" id="area" value="area" checked>
+                                <label for="area">area</label>
+                                <input type="radio" name="renderer" id="bar" value="bar">
+                                <label for="bar">bar</label>
+                                <input type="radio" name="renderer" id="line" value="line">
+                                <label for="line">line</label>
+                                <input type="radio" name="renderer" id="scatter" value="scatterplot">
+                                <label for="scatter">scatter</label>
+                            </div>
+                        </section>
+                        <section>
+                            <div id="offset_form">
+                                <label for="stack">
+                                    <input type="radio" name="offset" id="stack" value="zero" checked>
+                                    <span>stack</span>
+                                </label>
+                                <label for="stream">
+                                    <input type="radio" name="offset" id="stream" value="wiggle">
+                                    <span>stream</span>
+                                </label>
+                                <label for="pct">
+                                    <input type="radio" name="offset" id="pct" value="expand">
+                                    <span>pct</span>
+                                </label>
+                            </div>
+                            <div id="interpolation_form">
+                                <label for="cardinal">
+                                    <input type="radio" name="interpolation" id="cardinal" value="cardinal" checked>
+                                    <span>cardinal</span>
+                                </label>
+                                <label for="step">
+                                    <input type="radio" name="interpolation" id="step" value="step-after">
+                                    <span>step</span>
+                                </label>
+                            </div>
+                        </section>
+                        <section hidden="true">
+                            <h6>Smoothing</h6>
+                            <div id="smoother"></div>
+                        </section>
+                        <section></section>
+                    </form>
+
+                    <div id="chart_container">
+                        <div id="chart"></div>
+                        <div id="timeline"></div>
+                        <div id="preview"></div>
+                    </div>
+
+                </div>
+
+
+
+
+
             </div>
         </div>
     </div>
@@ -197,13 +245,11 @@
     <script src="js/vendor/jquery-1.10.2.min.js"></script>
     <script src="js/vendor/bootstrap.min.js"></script>
     <script src="js/vendor/jasny-bootstrap.min.js"></script>
-    <script src="js/vendor/d3.v2.js"></script>
-    <script src="js/vendor/cubism.v1.js"></script>
-    <script src="js/vendor/highlight.min.js"></script>
 
+    <!--<script src="https://cdn.socket.io/socket.io-1.0.6.js"></script>-->
 
-    <script src="js/support.js"></script>
-    <script src="js/control.js"></script>
+    <!--<script src="js/smoothie.js"></script>-->
+
     <script src="js/plugins.js"></script>
     <script src="js/eventViewer.js"></script>
 </body>
